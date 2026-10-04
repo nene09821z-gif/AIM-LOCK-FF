@@ -1,0 +1,54 @@
+name: Build APK
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Download ImGui
+        run: |
+          wget -q https://github.com/ocornut/imgui/archive/refs/tags/v1.90.4.tar.gz
+          tar -xzf v1.90.4.tar.gz
+          mkdir -p app/src/main/cpp/imgui
+          mkdir -p app/src/main/cpp/imgui/backends
+          cp imgui-1.90.4/imgui.cpp          app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imgui_draw.cpp     app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imgui_tables.cpp   app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imgui_widgets.cpp  app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imgui.h            app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imgui_internal.h   app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imstb_rectpack.h   app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imstb_textedit.h   app/src/main/cpp/imgui/
+          cp imgui-1.90.4/imstb_truetype.h   app/src/main/cpp/imgui/
+          cp imgui-1.90.4/backends/imgui_impl_android.cpp     app/src/main/cpp/imgui/backends/
+          cp imgui-1.90.4/backends/imgui_impl_android.h       app/src/main/cpp/imgui/backends/
+          cp imgui-1.90.4/backends/imgui_impl_opengl3.cpp     app/src/main/cpp/imgui/backends/
+          cp imgui-1.90.4/backends/imgui_impl_opengl3.h       app/src/main/cpp/imgui/backends/
+          cp imgui-1.90.4/backends/imgui_impl_opengl3_loader.h app/src/main/cpp/imgui/backends/
+
+      - name: Grant gradlew permission
+        run: chmod +x gradlew || true
+
+      - name: Setup Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.2
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-menu-apk
+          path: app/build/outputs/apk/debug/*.apk
